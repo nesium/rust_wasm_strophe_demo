@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wasm Test</title>
+    <base data-trunk-public-url />
+    <link data-trunk rel="css" href="web/style.css" />
+    <link data-trunk rel="copy-file" href="web/strophe.umd.min.js" />
+    <script type="text/javascript" src="/strophe.umd.min.js"></script>
+  </head>
+  <body>
+    <link
+      data-trunk
+      rel="rust"
+      href="Cargo.toml"
+      data-wasm-opt="z"
+      data-bin="wasm-test"
+    />
+    <div class="container">
+      <form id="jabberForm" onsubmit="submitForm();">
+        <label for="jabberJID">Jabber JID:</label>
+        <input type="text" id="jabberJID" required />
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" required/>
+
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+    <script type="module">
+      import init, { RustXMPPClient } from "/wasm-test.js";
+
+      let client;
+
+      // Initialize WASM module and RustXMPPClient
+      async function run() {
+        await init();
+        client = new RustXMPPClient();
+      }
+
+      // Form has been submitted, connect with credentials from form
+      window.submitForm = function () {
+        event.preventDefault();
+
+        const jid = document.getElementById("jabberJID").value;
+        const password = document.getElementById("password").value;
+
+        client.connect(jid, password);
+        return false;
+      };
+
+      run();
+    </script>
+  </body>
+</html>
