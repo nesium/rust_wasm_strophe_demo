@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Wasm Test</title>
     <base data-trunk-public-url />
-    <link data-trunk rel="css" href="web/style.css" />
-    <link data-trunk rel="copy-file" href="web/strophe.umd.min.js" />
-    <script type="text/javascript" src="/strophe.umd.min.js"></script>
+    <link data-trunk rel="css" href="./web/style.css" />
+    <link data-trunk rel="copy-file" href="./web/client_delegate.js" />
+    <link data-trunk rel="copy-file" href="./web/strophe.umd.min.js" />
+    <script type="text/javascript" src="./strophe.umd.min.js"></script>
   </head>
   <body>
     <link
@@ -18,39 +19,106 @@
       data-bin="wasm-test"
     />
     <div class="container">
-      <form id="jabberForm" onsubmit="submitForm();">
+      <form id="jabberForm" onsubmit="submitLoginForm();">
         <label for="jabberJID">Jabber JID:</label>
-        <input type="text" id="jabberJID" required />
+        <input type="text" id="jabberJID" value="marc@prose.org" required />
 
         <label for="password">Password:</label>
-        <input type="password" id="password" required/>
+        <input type="password" id="password" value="" required/>
 
-        <button type="submit">Submit</button>
+        <button type="submit">Login</button>
       </form>
     </div>
+
+    <div class="container">
+      <form id="messageForm" onsubmit="submitMessageForm();">
+        <label for="recipient">Recipient:</label>
+        <input type="text" id="recipient" value="cram@prose.org" required />
+
+        <label for="message">Your message:</label>
+        <textarea id="message">Hello from the Wasm test!</textarea>
+
+        <button type="submit">Send message</button>
+      </form>
+    </div>
+
+    <div class="container">
+      <table id="message_table">
+        <thead><tr><td>From</td><td>Body</td></tr></thead>
+      </table>
+    </div>
+
     <script type="module">
-      import init, { RustXMPPClient } from "/wasm-test.js";
+      import init, { RustXMPPClient } from "./wasm-test.js";
+      import { JSClientDelegate } from "./client_delegate.js";
 
       let client;
 
       // Initialize WASM module and RustXMPPClient
-      async function run() {
+      async function main() {
         await init();
-        client = new RustXMPPClient();
+
+        const delegate = new JSClientDelegate();
+        delegate.onMessagesAppended = onMessagesAppended;
+
+        client = new RustXMPPClient(delegate);
       }
 
       // Form has been submitted, connect with credentials from form
-      window.submitForm = function () {
+      window.submitLoginForm = async function () {
         event.preventDefault();
 
         const jid = document.getElementById("jabberJID").value;
         const password = document.getElementById("password").value;
 
-        client.connect(jid, password);
+        try {
+          await client.connect(jid, password);
+          appendRow("<system>", "Connected");
+        } catch (error) {
+          console.error(error);
+        }
+
         return false;
       };
 
-      run();
+      // Send message
+      window.submitMessageForm = async function () {
+        event.preventDefault();
+
+        const recipient = document.getElementById("recipient").value;
+        const message = document.getElementById("message").value;
+
+        try {
+          await client.send_message(recipient, message);
+        } catch (error) {
+          console.error(error);
+        }
+
+        return false;
+      };
+
+      function appendRow(from, body) {
+        const table = document.getElementById("message_table");
+
+        const row = table.insertRow();
+
+        const cell1 = row.insertCell(0);
+        cell1.innerText = from;
+
+        const cell2 = row.insertCell(1);
+        cell2.innerText = body;
+      }
+
+      async function onMessagesAppended(conversation, ids) {
+        console.log("Loading messages…")
+        let messages = await client.load_messages_with_ids(conversation, ids);
+
+        for (message of messages) {
+          appendRow(message.from, message.body)
+        }
+      }
+
+      main();
     </script>
   </body>
 </html>
