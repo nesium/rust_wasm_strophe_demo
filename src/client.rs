@@ -17,15 +17,18 @@ pub struct RustXMPPClient {
 
 #[wasm_bindgen]
 impl RustXMPPClient {
-    #[wasm_bindgen(constructor)]
-    pub fn new(delegate: JSClientDelegate) -> Self {
-        RustXMPPClient {
+    pub async fn init(delegate: JSClientDelegate) -> anyhow::Result<RustXMPPClient, JsValue> {
+        let db = InMemoryDataCache::new().await.map_err(|err| JsValue::from(err.to_string()))?;
+
+        let client = RustXMPPClient {
             client: ClientBuilder::<InMemoryDataCache, NoopAvatarCache>::new()
                 .set_connector_provider(Box::new(|| Box::new(StropheJSConnector::default())))
-                .set_data_cache(InMemoryDataCache::default())
+                .set_data_cache(db)
                 .set_delegate(Some(Box::new(Delegate::new(delegate))))
                 .build(),
-        }
+        };
+
+        Ok(client)
     }
 
     pub async fn connect(&self, jid: String, password: String) -> Result<(), JSConnectionError> {

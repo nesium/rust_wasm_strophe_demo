@@ -7,6 +7,7 @@ edition = "2021"
 anyhow = "1.0"
 async-trait = "0.1"
 console_error_panic_hook = "0.1"
+indexed_db_futures = "0.3"
 jid = "0.9"
 js-sys = "0.3"
 microtype = "0.7"
@@ -16,8 +17,9 @@ prose_core_domain = { git = "https://github.com/prose-im/prose-core-client.git",
 prose_core_lib = { git = "https://github.com/prose-im/prose-core-client.git", branch="xmpp-rs", features = ["wasm"] }
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.5"
-wasm-bindgen = {version = "0.2", features = ["serde-serialize"] }
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
 wasm-bindgen-futures = "0.4"
+web-sys = {version = "0.3", features = ["XmlDocument"] }
 
 [profile.release]
 # Do not perform backtrace for panic on release builds.

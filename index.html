@@ -61,7 +61,7 @@
         const delegate = new JSClientDelegate();
         delegate.onMessagesAppended = onMessagesAppended;
 
-        client = new RustXMPPClient(delegate);
+        client = await RustXMPPClient.init(delegate);
       }
 
       // Form has been submitted, connect with credentials from form

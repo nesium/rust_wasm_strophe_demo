@@ -8,16 +8,35 @@ use prose_core_lib::stanza::avatar::ImageId;
 use prose_core_lib::stanza::message::ChatState;
 use prose_core_lib::stanza::{message, presence};
 use std::sync::Mutex;
+use indexed_db_futures::{IdbDatabase, IdbVersionChangeEvent};
+use indexed_db_futures::prelude::IdbOpenDbRequestLike;
+use indexed_db_futures::web_sys::DomException;
+use wasm_bindgen::JsValue;
 
 pub struct InMemoryDataCache {
+    db: IdbDatabase,
     messages: Mutex<HashMap<message::Id, MessageLike>>,
 }
 
-impl Default for InMemoryDataCache {
-    fn default() -> Self {
-        InMemoryDataCache {
+unsafe impl Send for InMemoryDataCache {}
+unsafe impl Sync for InMemoryDataCache {}
+
+impl InMemoryDataCache {
+    pub async fn new() -> anyhow::Result<Self, DomException> {
+        let mut db_req = IdbDatabase::open("ProseCache")?;
+        db_req.set_on_upgrade_needed(Some(|evt: &IdbVersionChangeEvent| -> Result<(), JsValue> {
+            if !evt.db().object_store_names().any(|n| n == "ProseStore") {
+                evt.db().create_object_store("ProseStore")?;
+            }
+            Ok(())
+        }));
+
+        let db = db_req.into_future().await?;
+
+        Ok(InMemoryDataCache {
+            db,
             messages: Mutex::new(HashMap::new()),
-        }
+        })
     }
 }
 
